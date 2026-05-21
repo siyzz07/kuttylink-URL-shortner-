@@ -1,11 +1,11 @@
-import React from 'react';
+import React from "react";
 
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   isLoading?: boolean;
 }
 
 export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className = '', children, isLoading, ...props }, ref) => {
+  ({ className = "", children, isLoading, ...props }, ref) => {
     return (
       <button
         ref={ref}
@@ -19,6 +19,6 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         {children}
       </button>
     );
-  }
+  },
 );
 Button.displayName = "Button";

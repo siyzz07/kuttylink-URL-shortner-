@@ -1,50 +1,35 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
 import { useFormik } from "formik";
 import * as Yup from "yup";
 import { loginUser } from "@/services/api";
+import toast from "react-hot-toast";
+import { useRouter } from "next/navigation";
+import { Input } from "@/components/ui/Input";
+import { Button } from "@/components/ui/Button";
+import { Eye, EyeOff } from "lucide-react";
 
 export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
-  const searchParams = useSearchParams();
-
-  // Check for success message in URL (e.g., from signup)
-  useEffect(() => {
-    const message = searchParams.get("message");
-    if (message) {
-      setSuccessMessage(message);
-    }
-  }, [searchParams]);
+  const [showPassword, setShowPassword] = useState(false);
+  const router = useRouter();
 
   const formik = useFormik({
-    initialValues: {
-      email: "",
-      password: "",
-    },
+    initialValues: { email: "", password: "" },
     validationSchema: Yup.object({
-      email: Yup.string()
-        .email("Invalid email address")
-        .required("Email is required"),
-      password: Yup.string()
-        .min(6, "Password must be at least 6 characters")
-        .required("Password is required"),
+      email: Yup.string().email("Invalid email").required("Email is required"),
+      password: Yup.string().required("Password is required"),
     }),
     onSubmit: async (values) => {
       setIsLoading(true);
-      setError(null);
-      setSuccessMessage(null);
       try {
         await loginUser(values);
-        alert("Login successful!");
-        // Typically: router.push('/dashboard')
+        toast.success("Welcome back!");
+        router.push("/home");
       } catch (err: any) {
-        console.error("Login failed", err);
-        setError(err.message || "Invalid email or password");
+        toast.error(err.message || "Invalid credentials");
       } finally {
         setIsLoading(false);
       }
@@ -52,111 +37,72 @@ export default function LoginPage() {
   });
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50 font-sans p-4 relative">
-      {/* Brand Logo - Top */}
-      <div className="absolute top-8 left-8">
-        <Link href="/" className="text-2xl font-bold text-indigo-600 tracking-tight">
-          KuttyLink.
-        </Link>
-      </div>
+    <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 p-6">
+      {/* Brand Logo */}
+      <Link href="/" className="flex items-center gap-2 mb-8 group">
+        <div className="w-9 h-9 bg-indigo-600 rounded-lg flex items-center justify-center shadow-lg shadow-indigo-100 font-bold text-white text-xl">K</div>
+        <span className="text-xl font-bold text-slate-900 tracking-tight">KuttyLink<span className="text-indigo-600">.</span></span>
+      </Link>
 
-      {/* Standard SaaS Card */}
-      <div className="w-full max-w-md p-8 sm:p-10 bg-white border border-slate-200 rounded-2xl shadow-xl">
+      {/* Simple Card */}
+      <div className="w-full max-w-md bg-white border border-slate-200 rounded-2xl shadow-sm p-8 sm:p-10">
         <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold text-slate-900 mb-2">
-            Welcome back
-          </h1>
-          <p className="text-slate-500 text-sm">
-            Please enter your details to sign in.
-          </p>
+          <h1 className="text-2xl font-bold text-slate-900 tracking-tight text-black">Sign in</h1>
+          <p className="text-slate-500 text-sm mt-2">Enter your credentials to access your account</p>
         </div>
 
-        {/* Success Alert */}
-        {successMessage && (
-          <div className="mb-6 p-4 text-sm text-green-800 rounded-lg bg-green-50 border border-green-100" role="alert">
-            <span className="font-medium">Success!</span> {successMessage}
-          </div>
-        )}
-
-        {/* Error Alert */}
-        {error && (
-          <div className="mb-6 p-4 text-sm text-red-800 rounded-lg bg-red-50 border border-red-100" role="alert">
-            <span className="font-medium">Error:</span> {error}
-          </div>
-        )}
-
-        <form onSubmit={formik.handleSubmit}>
-          {/* Email Field */}
-          <div className="mb-5">
-            <label
-              htmlFor="email"
-              className="block text-sm font-medium text-slate-700 mb-1.5"
-            >
-              Email address
-            </label>
-            <input
-              type="email"
-              id="email"
-              {...formik.getFieldProps("email")}
-              className={`w-full px-4 py-2.5 bg-white border ${
-                formik.touched.email && formik.errors.email
-                  ? "border-red-500 focus:ring-red-500/20 focus:border-red-500"
-                  : "border-slate-300 focus:ring-indigo-500/20 focus:border-indigo-500"
-              } rounded-lg text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-4 transition-all`}
-              placeholder="Enter your email"
-            />
-            {formik.touched.email && formik.errors.email ? (
-              <div className="text-red-500 text-sm mt-1.5 font-medium">
-                {formik.errors.email}
-              </div>
-            ) : null}
-          </div>
-
-          {/* Password Field */}
-          <div className="mb-6">
-            <label
-              htmlFor="password"
-              className="block text-sm font-medium text-slate-700 mb-1.5"
-            >
-              Password
-            </label>
-            <input
-              type="password"
+        <form onSubmit={formik.handleSubmit} className="space-y-5">
+          <Input
+            id="email"
+            type="email"
+            label="Email"
+            placeholder="name@email.com"
+            {...formik.getFieldProps("email")}
+            error={formik.errors.email}
+            touched={formik.touched.email}
+          />
+          
+          <div className="space-y-1 relative">
+            <div className="flex justify-between items-center mb-1">
+              <label className="text-sm font-bold text-slate-700 tracking-tight ml-1">Password</label>
+              <Link href="#" className="text-xs font-bold text-indigo-600 hover:text-indigo-700">Forgot password?</Link>
+            </div>
+            <Input
               id="password"
-              {...formik.getFieldProps("password")}
-              className={`w-full px-4 py-2.5 bg-white border ${
-                formik.touched.password && formik.errors.password
-                  ? "border-red-500 focus:ring-red-500/20 focus:border-red-500"
-                  : "border-slate-300 focus:ring-indigo-500/20 focus:border-indigo-500"
-              } rounded-lg text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-4 transition-all`}
+              type={showPassword ? "text" : "password"}
+              label="" // Already handled by the div above
               placeholder="••••••••"
+              {...formik.getFieldProps("password")}
+              error={formik.errors.password}
+              touched={formik.touched.password}
+              rightElement={
+                <button 
+                  type="button" 
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="p-2 rounded-xl text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 transition-all focus:outline-none"
+                >
+                  {showPassword ? <EyeOff size={20} strokeWidth={2} /> : <Eye size={20} strokeWidth={2} />}
+                </button>
+              }
             />
-            {formik.touched.password && formik.errors.password ? (
-              <div className="text-red-500 text-sm mt-1.5 font-medium">
-                {formik.errors.password}
-              </div>
-            ) : null}
           </div>
 
-          <button
-            type="submit"
-            disabled={isLoading}
-            className="w-full py-2.5 mt-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium shadow-sm shadow-indigo-200 transition-all active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed flex justify-center items-center"
-          >
-            {isLoading ? "Signing in..." : "Sign in"}
-          </button>
+          <Button type="submit" isLoading={isLoading} className="mt-2">
+            Sign in
+          </Button>
         </form>
 
-        <div className="mt-8 text-center text-sm text-slate-600">
+        <div className="mt-8 text-center text-sm text-slate-500">
           Don't have an account?{" "}
-          <Link
-            href="/signup"
-            className="text-indigo-600 font-semibold hover:text-indigo-700 transition-colors"
-          >
+          <Link href="/signup" className="text-indigo-600 font-bold hover:text-indigo-700">
             Sign up
           </Link>
         </div>
       </div>
+
+      <footer className="mt-8 text-xs text-slate-400">
+        &copy; {new Date().getFullYear()} KuttyLink. All rights reserved.
+      </footer>
     </div>
   );
 }

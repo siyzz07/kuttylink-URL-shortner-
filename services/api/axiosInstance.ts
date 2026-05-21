@@ -1,19 +1,35 @@
 import axios from 'axios';
 
-/**
- * Professional Axios Instance Configuration
- * Centralizing the configuration makes it easy to add interceptors,
- * base URLs, and headers in one place.
- */
 const axiosInstance = axios.create({
-  baseURL: '/api', // Base path for all API routes
+  baseURL: '/api', 
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: 10000, // Optional: 10 second timeout
+  timeout: 10000,
+  withCredentials: true, 
 });
 
-// You can add interceptors here later (e.g., for attaching JWT tokens)
-// axiosInstance.interceptors.request.use(...)
+
+axiosInstance.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    const originalRequest = error.config;
+
+
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true;
+
+      try {
+        
+        await axios.post('/api/auth/refresh');
+        return axiosInstance(originalRequest);
+      } catch (refreshError) {
+        return Promise.reject(refreshError);
+      }
+    }
+
+    return Promise.reject(error);
+  }
+);
 
 export default axiosInstance;

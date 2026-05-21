@@ -1,54 +1,58 @@
 "use client";
 
-import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { SignupForm } from "@/components/features/auth/SignupForm";
 import { registerUser } from "@/services/api";
+import toast from "react-hot-toast";
 
 export default function SignupPage() {
   const router = useRouter();
-  const [error, setError] = useState<string | null>(null);
 
   const handleSignupSubmit = async (values: any) => {
-    setError(null);
     try {
       await registerUser(values);
-      // Redirect to login with a success message in the URL
-      router.push("/login?message=Account created successfully. Please sign in.");
+      toast.success("Account created successfully!");
+      router.push("/login");
     } catch (err: any) {
       console.error("Registration failed", err);
-      setError(err.message || "Registration failed. Please try again.");
+      toast.error(err.message || "Registration failed. Please try again.");
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50 font-sans py-12 px-4 sm:px-6 lg:px-8">
-      <div className="w-full max-w-md space-y-8 bg-white p-8 sm:p-10 rounded-xl shadow-sm border border-slate-200">
-        
-        <div className="text-center">
-          <h2 className="mt-2 text-3xl font-bold tracking-tight text-slate-900">
-            Create an account
-          </h2>
-          <p className="mt-2 text-sm text-slate-600">
-            Or{" "}
-            <Link href="/login" className="font-medium text-indigo-600 hover:underline">
-              sign in to your existing account
-            </Link>
-          </p>
+    <div className="min-h-screen flex flex-col items-center text-black justify-center bg-slate-50 p-6">
+      {/* Brand Logo */}
+      <Link href="/" className="flex items-center gap-2 mb-8 group">
+        <div className="w-9 h-9 bg-indigo-600 rounded-lg flex items-center justify-center shadow-lg shadow-indigo-100">
+          <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+          </svg>
+        </div>
+        <span className="text-xl font-bold text-slate-900 tracking-tight">KuttyLink<span className="text-indigo-600">.</span></span>
+      </Link>
+
+      {/* Simple Card */}
+      <div className="w-full max-w-md bg-white border border-slate-200 rounded-2xl shadow-sm p-8 sm:p-10">
+        <div className="text-center mb-8">
+          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Create an account</h1>
+          <p className="text-slate-500 text-sm mt-2">Join us and start shortening your links today</p>
         </div>
 
-        {/* Error Alert Display */}
-        {error && (
-          <div className="p-4 text-sm text-red-800 rounded-lg bg-red-50 border border-red-100 animate-in fade-in slide-in-from-top-1 duration-200" role="alert">
-            <span className="font-medium">Error:</span> {error}
-          </div>
-        )}
-
-        {/* Separated Component (SRP) */}
         <SignupForm onSubmit={handleSignupSubmit} />
 
+        <div className="mt-8 text-center text-sm text-slate-500">
+          Already have an account?{" "}
+          <Link href="/login" className="text-indigo-600 font-bold hover:text-indigo-700">
+            Sign in
+          </Link>
+        </div>
       </div>
+
+      {/* Simple Footer */}
+      <footer className="mt-8 text-xs text-slate-400">
+        &copy; {new Date().getFullYear()} KuttyLink. All rights reserved.
+      </footer>
     </div>
   );
 }

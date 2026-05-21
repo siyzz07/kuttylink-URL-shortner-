@@ -1,8 +1,7 @@
 import axiosInstance from './axiosInstance';
 
-/**
- * Real API call to login a user using the custom Axios Instance
- */
+
+//--------------------------------- login user 
 export const loginUser = async (credentials: any) => {
   try {
     const response = await axiosInstance.post('/auth/login', credentials);
@@ -13,9 +12,8 @@ export const loginUser = async (credentials: any) => {
   }
 };
 
-/**
- * Real API call to register a user using the custom Axios Instance
- */
+
+//--------------------------------- register user 
 export const registerUser = async (userData: any) => {
   try {
     const response = await axiosInstance.post('/auth/signup', userData);
@@ -26,14 +24,43 @@ export const registerUser = async (userData: any) => {
   }
 };
 
-/**
- * Simulates shortening a URL API call
- */
-export const shortenUrl = async (longUrl: string) => {
-  return new Promise<{ shortUrl: string }>((resolve) => {
-    setTimeout(() => {
-      console.log("API Layer: Shortening URL", longUrl);
-      resolve({ shortUrl: "http://localhost:3000/xyz123" });
-    }, 1500);
-  });
+//--------------------------------- logout user
+export const logoutUser = async () => {
+  try {
+    const response = await axiosInstance.post('/auth/logout');
+    return response.data;
+  } catch (error: any) {
+    throw new Error('Logout failed');
+  }
+};
+
+//--------------------------------- get current user
+export const getCurrentUser = async () => {
+  try {
+    const response = await axiosInstance.get('/auth/me');
+    return response.data;
+  } catch (error: any) {
+    return null;
+  }
+};
+
+//--------------------------------- shorten URL 
+export const shortenUrl = async (url: string) => {
+  try {
+    const response = await axiosInstance.post('/url/shorten', { url });
+    return response.data;
+  } catch (error: any) {
+    const message = error.response?.data?.error || 'Failed to shorten URL';
+    throw new Error(message);
+  }
+};
+
+//--------------------------------- get URL history
+export const getUrlHistory = async () => {
+  try {
+    const response = await axiosInstance.get('/url');
+    return response.data.history;
+  } catch (error: any) {
+    return [];
+  }
 };

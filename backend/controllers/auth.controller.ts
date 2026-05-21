@@ -1,74 +1,150 @@
-import { NextResponse } from 'next/server';
-import { IAuthService } from '../interfaces/auth.service.interface';
-import { HTTP_STATUS, MESSAGES } from '../constants';
+import { NextResponse } from "next/server";
+import { IAuthService } from "../interfaces/auth.service.interface";
+import { HTTP_STATUS, MESSAGES } from "../constants";
+import { AppError } from "../utils/appError";
+import jwt from "jsonwebtoken";
 
 export class AuthController {
-  constructor(private authService: IAuthService) {}
+  private authService: IAuthService;
+
+  constructor(authService: IAuthService) {
+    this.authService = authService;
+  }
 
   async signup(req: Request) {
-    try {
-      const body = await req.json();
-      
-      if (!body.name || !body.email || !body.password) {
-        return NextResponse.json(
-          { error: MESSAGES.MISSING_REQUIRED_FIELDS },
-          { status: HTTP_STATUS.BAD_REQUEST }
-        );
-      }
+    const body = await req.json();
+    const { name, email, password } = body;
 
-      const user = await this.authService.registerUser(body);
-      
+    if (!name || !email || !password) {
       return NextResponse.json(
-        { message: MESSAGES.USER_REGISTERED_SUCCESS, user },
-        { status: HTTP_STATUS.CREATED }
+        { error: MESSAGES.MISSING_REQUIRED_FIELDS },
+        { status: HTTP_STATUS.BAD_REQUEST }
       );
-    } catch (error: any) {
-      console.error('Signup Controller Error:', error.message);
-      
-      if (error.message === MESSAGES.USER_ALREADY_EXISTS) {
-        return NextResponse.json(
-          { error: error.message },
-          { status: HTTP_STATUS.CONFLICT }
-        );
-      }
-      
+    }
+
+    const user = await this.authService.registerUser({ name, email, password });
+
+    return NextResponse.json(
+      { message: MESSAGES.USER_REGISTERED_SUCCESS, user },
+      { status: HTTP_STATUS.CREATED }
+    );
+  }
+
+  async login(req: Request) {
+    const body = await req.json();
+    const { email, password } = body;
+
+    const { accessToken, refreshToken, ...user } = await this.authService.loginUser({ email, password });
+ 
+    const response = NextResponse.json(
+      { message: MESSAGES.LOGIN_SUCCESS, user },
+      { status: HTTP_STATUS.OK }
+    );
+
+    response.cookies.set("access_token", accessToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      maxAge: 15 * 60,
+      path: "/",
+    });
+
+    response.cookies.set("refresh_token", refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      maxAge: 7 * 24 * 60 * 60,
+      path: "/",
+    });
+
+    return response;
+  }
+
+  async logout() {
+    const response = NextResponse.json(
+      { message: MESSAGES.LOGOUT_SUCCESS },
+      { status: HTTP_STATUS.OK }
+    );
+
+    response.cookies.set("access_token", "", { maxAge: 0 });
+    response.cookies.set("refresh_token", "", { maxAge: 0 });
+
+    return response;
+  }
+
+  async refresh(req: Request) {
+    const cookieHeader = req.headers.get("cookie");
+    const refreshToken = cookieHeader
+      ?.split("; ")
+      .find((row) => row.startsWith("refresh_token="))
+      ?.split("=")[1];
+
+    if (!refreshToken) {
       return NextResponse.json(
-        { error: MESSAGES.INTERNAL_SERVER_ERROR },
-        { status: HTTP_STATUS.INTERNAL_SERVER_ERROR }
+        { error: MESSAGES.SESSION_EXPIRED },
+        { status: HTTP_STATUS.UNAUTHORIZED }
+      );
+    }
+
+    try {
+      const decoded: any = jwt.verify(
+        refreshToken,
+        process.env.JWT_REFRESH_SECRET || "refresh_fallback_secret"
+      );
+
+      const accessToken = jwt.sign(
+        { id: decoded.id, email: decoded.email },
+        process.env.JWT_SECRET || "fallback_secret",
+        { expiresIn: "15m" }
+      );
+
+      const response = NextResponse.json(
+        { message: "Token refreshed" },
+        { status: HTTP_STATUS.OK }
+      );
+
+      response.cookies.set("access_token", accessToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "strict",
+        maxAge: 15 * 60,
+        path: "/",
+      });
+
+      return response;
+    } catch (error) {
+      return NextResponse.json(
+        { error: MESSAGES.SESSION_EXPIRED },
+        { status: HTTP_STATUS.UNAUTHORIZED }
       );
     }
   }
 
-  async login(req: Request) {
+  async me(req: Request) {
     try {
-      const body = await req.json();
+      const cookieHeader = req.headers.get("cookie");
+      const token = cookieHeader
+        ?.split("; ")
+        .find((row) => row.startsWith("access_token="))
+        ?.split("=")[1];
 
-      if (!body.email || !body.password) {
+      if (!token) {
         return NextResponse.json(
-          { error: MESSAGES.MISSING_REQUIRED_FIELDS },
-          { status: HTTP_STATUS.BAD_REQUEST }
-        );
-      }
-
-      const user = await this.authService.loginUser(body);
-
-      return NextResponse.json(
-        { message: MESSAGES.LOGIN_SUCCESS, user },
-        { status: HTTP_STATUS.OK }
-      );
-    } catch (error: any) {
-      console.error('Login Controller Error:', error.message);
-
-      if (error.message === MESSAGES.INVALID_CREDENTIALS) {
-        return NextResponse.json(
-          { error: error.message },
+          { error: MESSAGES.AUTH_REQUIRED },
           { status: HTTP_STATUS.UNAUTHORIZED }
         );
       }
 
+      const decoded: any = jwt.verify(
+        token,
+        process.env.JWT_SECRET || "fallback_secret"
+      );
+      
+      return NextResponse.json({ user: decoded }, { status: HTTP_STATUS.OK });
+    } catch (error: any) {
       return NextResponse.json(
-        { error: MESSAGES.INTERNAL_SERVER_ERROR },
-        { status: HTTP_STATUS.INTERNAL_SERVER_ERROR }
+        { error: MESSAGES.AUTH_REQUIRED },
+        { status: HTTP_STATUS.UNAUTHORIZED }
       );
     }
   }
