@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { IAuthService } from "../interfaces/auth.service.interface";
 import { HTTP_STATUS, MESSAGES } from "../constants";
 import { AppError } from "../utils/appError";
+import { globalErrorHandler } from "../utils/errorHandler";
 import jwt from "jsonwebtoken";
 
 export class AuthController {
@@ -12,52 +13,60 @@ export class AuthController {
   }
 
   async signup(req: Request) {
-    const body = await req.json();
-    const { name, email, password } = body;
+    try {
+      const body = await req.json();
+      const { name, email, password } = body;
 
-    if (!name || !email || !password) {
+      if (!name || !email || !password) {
+        return NextResponse.json(
+          { error: MESSAGES.MISSING_REQUIRED_FIELDS },
+          { status: HTTP_STATUS.BAD_REQUEST }
+        );
+      }
+
+      const user = await this.authService.registerUser({ name, email, password });
+
       return NextResponse.json(
-        { error: MESSAGES.MISSING_REQUIRED_FIELDS },
-        { status: HTTP_STATUS.BAD_REQUEST }
+        { message: MESSAGES.USER_REGISTERED_SUCCESS, user },
+        { status: HTTP_STATUS.CREATED }
       );
+    } catch (error) {
+      return globalErrorHandler(error);
     }
-
-    const user = await this.authService.registerUser({ name, email, password });
-
-    return NextResponse.json(
-      { message: MESSAGES.USER_REGISTERED_SUCCESS, user },
-      { status: HTTP_STATUS.CREATED }
-    );
   }
 
   async login(req: Request) {
-    const body = await req.json();
-    const { email, password } = body;
+    try {
+      const body = await req.json();
+      const { email, password } = body;
 
-    const { accessToken, refreshToken, ...user } = await this.authService.loginUser({ email, password });
- 
-    const response = NextResponse.json(
-      { message: MESSAGES.LOGIN_SUCCESS, user },
-      { status: HTTP_STATUS.OK }
-    );
+      const { accessToken, refreshToken, ...user } = await this.authService.loginUser({ email, password });
+   
+      const response = NextResponse.json(
+        { message: MESSAGES.LOGIN_SUCCESS, user },
+        { status: HTTP_STATUS.OK }
+      );
 
-    response.cookies.set("access_token", accessToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
-      maxAge: 15 * 60,
-      path: "/",
-    });
+      response.cookies.set("access_token", accessToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "strict",
+        maxAge: 15 * 60,
+        path: "/",
+      });
 
-    response.cookies.set("refresh_token", refreshToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict",
-      maxAge: 7 * 24 * 60 * 60,
-      path: "/",
-    });
+      response.cookies.set("refresh_token", refreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "strict",
+        maxAge: 7 * 24 * 60 * 60,
+        path: "/",
+      });
 
-    return response;
+      return response;
+    } catch (error) {
+      return globalErrorHandler(error);
+    }
   }
 
   async logout() {

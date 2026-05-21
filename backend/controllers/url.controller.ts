@@ -1,6 +1,7 @@
 import { IUrlService } from "../services/url.service";
 import { NextResponse } from "next/server";
 import { HTTP_STATUS, MESSAGES } from "../constants";
+import { globalErrorHandler } from "../utils/errorHandler";
 import jwt from "jsonwebtoken";
 
 export class UrlController {
@@ -57,10 +58,7 @@ export class UrlController {
         { status: HTTP_STATUS.CREATED }
       );
     } catch (error: any) {
-      return NextResponse.json(
-        { error: error.message || MESSAGES.INTERNAL_SERVER_ERROR },
-        { status: error.status || HTTP_STATUS.INTERNAL_SERVER_ERROR }
-      );
+      return globalErrorHandler(error);
     }
   }
 
@@ -95,10 +93,7 @@ export class UrlController {
 
       return NextResponse.json({ history: formattedHistory }, { status: HTTP_STATUS.OK });
     } catch (error: any) {
-      return NextResponse.json(
-        { error: MESSAGES.INTERNAL_SERVER_ERROR },
-        { status: HTTP_STATUS.INTERNAL_SERVER_ERROR }
-      );
+      return globalErrorHandler(error);
     }
   }
 
@@ -107,10 +102,7 @@ export class UrlController {
       const originalUrl = await this.urlService.getOriginalUrl(shortCode);
       return NextResponse.redirect(new URL(originalUrl));
     } catch (error: any) {
-      return NextResponse.json(
-        { error: "Link not found or expired" },
-        { status: HTTP_STATUS.NOT_FOUND }
-      );
+      return globalErrorHandler(error);
     }
   }
 }
