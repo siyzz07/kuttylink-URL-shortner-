@@ -3,11 +3,13 @@ import type { NextRequest } from "next/server";
 import * as jose from "jose";
 import { ROUTES } from "@/backend/constants";
 
-export async function proxy(request: NextRequest) {
+export default async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   const isGuestRoute = pathname === ROUTES.LOGIN || pathname === ROUTES.SIGNUP;
   const isProtectedRoute = pathname.startsWith(ROUTES.HOME) || pathname.startsWith("/dashboard");
+
+  console.log(`[Proxy Interceptor] Path: ${pathname}, isGuest: ${isGuestRoute}, isProtected: ${isProtectedRoute}`);
 
   if (!isGuestRoute && !isProtectedRoute) {
     return NextResponse.next();
@@ -16,15 +18,20 @@ export async function proxy(request: NextRequest) {
   const accessToken = request.cookies.get("access_token")?.value;
   const refreshToken = request.cookies.get("refresh_token")?.value;
 
+  console.log(`[Proxy Cookies] access_token present: ${!!accessToken}, refresh_token present: ${!!refreshToken}`);
+  console.log(`[Proxy Env] JWT_SECRET: ${process.env.JWT_SECRET ? "defined" : "undefined"}, JWT_REFRESH_SECRET: ${process.env.JWT_REFRESH_SECRET ? "defined" : "undefined"}`);
+
   let isValidUser = false;
   let newAccessToken: string | null = null;
 
   if (accessToken) {
     try {
       const secret = new TextEncoder().encode(process.env.JWT_SECRET || "fallback_secret");
-      await jose.jwtVerify(accessToken, secret);
+      const result = await jose.jwtVerify(accessToken, secret);
+      console.log(`[Proxy] Access token verified successfully. Payload:`, result.payload);
       isValidUser = true;
     } catch (err: any) {
+      console.error(`[Proxy] Access token verification failed: ${err.message}`);
       console.log("Access token invalid or expired. Attempting to refresh using refresh token...");
     }
   }
@@ -35,6 +42,7 @@ export async function proxy(request: NextRequest) {
         process.env.JWT_REFRESH_SECRET || "refresh_fallback_secret"
       );
       const { payload: refreshPayload } = await jose.jwtVerify(refreshToken, refreshSecret);
+      console.log(`[Proxy] Refresh token verified successfully. Payload:`, refreshPayload);
 
       const secret = new TextEncoder().encode(process.env.JWT_SECRET || "fallback_secret");
       newAccessToken = await new jose.SignJWT({
@@ -49,14 +57,16 @@ export async function proxy(request: NextRequest) {
       isValidUser = true;
       console.log("Successfully generated a new access token via refresh token.");
     } catch (err: any) {
+      console.error(`[Proxy] Refresh token verification failed: ${err.message}`);
       console.log("Refresh token invalid or expired.");
     }
   }
 
   if (!isValidUser && isProtectedRoute) {
+    console.log(`[Proxy] User is NOT valid and path is protected. Redirecting to login.`);
     const loginUrl = new URL(ROUTES.LOGIN, request.url);
     const response = NextResponse.redirect(loginUrl);
-    
+
     response.cookies.delete("access_token");
     response.cookies.delete("refresh_token");
     return response;
@@ -82,7 +92,7 @@ export async function proxy(request: NextRequest) {
 
   if (newAccessToken) {
     const requestHeaders = new Headers(request.headers);
-    
+
     let cookiesStr = `access_token=${newAccessToken}`;
     request.cookies.getAll().forEach((cookie) => {
       if (cookie.name !== "access_token") {

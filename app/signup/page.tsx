@@ -1,13 +1,24 @@
 "use client";
 
+import React, { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { SignupForm } from "@/components/features/auth/SignupForm";
-import { registerUser } from "@/services/api";
+import { registerUser, getCurrentUser } from "@/services/api";
 import toast from "react-hot-toast";
 
 export default function SignupPage() {
   const router = useRouter();
+
+  useEffect(() => {
+    const checkUser = async () => {
+      const data = await getCurrentUser();
+      if (data) {
+        router.push("/home");
+      }
+    };
+    checkUser();
+  }, [router]);
 
   const handleSignupSubmit = async (values: any) => {
     try {

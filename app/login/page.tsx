@@ -1,10 +1,10 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useFormik } from "formik";
 import * as Yup from "yup";
-import { loginUser } from "@/services/api";
+import { loginUser, getCurrentUser } from "@/services/api";
 import toast from "react-hot-toast";
 import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/Input";
@@ -15,6 +15,16 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const router = useRouter();
+
+  useEffect(() => {
+    const checkUser = async () => {
+      const data = await getCurrentUser();
+      if (data) {
+        router.push("/home");
+      }
+    };
+    checkUser();
+  }, [router]);
 
   const formik = useFormik({
     initialValues: { email: "", password: "" },

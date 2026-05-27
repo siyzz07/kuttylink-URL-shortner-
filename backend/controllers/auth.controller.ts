@@ -83,10 +83,8 @@ export class AuthController {
 
   async refresh(req: Request) {
     const cookieHeader = req.headers.get("cookie");
-    const refreshToken = cookieHeader
-      ?.split("; ")
-      .find((row) => row.startsWith("refresh_token="))
-      ?.split("=")[1];
+    const match = cookieHeader?.match(/(^|;)\s*refresh_token=([^;]*)/);
+    const refreshToken = match ? match[2] : undefined;
 
     if (!refreshToken) {
       return NextResponse.json(
@@ -132,10 +130,8 @@ export class AuthController {
   async me(req: Request) {
     try {
       const cookieHeader = req.headers.get("cookie");
-      const token = cookieHeader
-        ?.split("; ")
-        .find((row) => row.startsWith("access_token="))
-        ?.split("=")[1];
+      const match = cookieHeader?.match(/(^|;)\s*access_token=([^;]*)/);
+      const token = match ? match[2] : undefined;
 
       if (!token) {
         return NextResponse.json(
