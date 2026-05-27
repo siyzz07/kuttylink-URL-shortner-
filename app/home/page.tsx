@@ -52,9 +52,9 @@ export default function UserHomePage() {
     try {
       const response = await shortenUrl(longUrl);
       setShortUrl(response.shortUrl);
-      setLongUrl(""); // Clear input
+      setLongUrl(""); 
       toast.success("URL shortened successfully!");
-      fetchHistory(); // Refresh history
+      fetchHistory(); 
     } catch (error) {
       toast.error("Failed to shorten URL");
     } finally {

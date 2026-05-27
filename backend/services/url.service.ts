@@ -1,13 +1,8 @@
 import { IUrlRepository } from "../repositories/url.repository";
+import { IUrlService } from "../interfaces/url.service.interface";
 import { AppError } from "../utils/appError";
 import { HTTP_STATUS, MESSAGES } from "../constants";
 import crypto from "crypto";
-
-export interface IUrlService {
-  shorten(originalUrl: string, userId: string): Promise<any>;
-  getOriginalUrl(shortCode: string): Promise<string>;
-  getHistory(userId: string): Promise<any[]>;
-}
 
 export class UrlService implements IUrlService {
   private urlRepository: IUrlRepository;
@@ -21,14 +16,14 @@ export class UrlService implements IUrlService {
   }
 
   async shorten(originalUrl: string, userId: string) {
-    // Basic URL validation
+
     try {
       new URL(originalUrl);
     } catch (e) {
       throw new AppError("Invalid URL format", HTTP_STATUS.BAD_REQUEST);
     }
 
-    // Generate a unique 6-character short code
+  
     const shortCode = crypto.randomBytes(3).toString("hex");
 
     const newUrl = await this.urlRepository.create({

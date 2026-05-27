@@ -1,4 +1,4 @@
-import { IUrlService } from "../services/url.service";
+import { IUrlService } from "../interfaces/url.service.interface";
 import { NextResponse } from "next/server";
 import { HTTP_STATUS, MESSAGES } from "../constants";
 import { globalErrorHandler } from "../utils/errorHandler";

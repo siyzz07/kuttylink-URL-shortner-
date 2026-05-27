@@ -61,7 +61,7 @@ export default function LoginPage() {
             error={formik.errors.email}
             touched={formik.touched.email}
           />
-          
+
           <div className="space-y-1 relative">
             <div className="flex justify-between items-center mb-1">
               <label className="text-sm font-bold text-slate-700 tracking-tight ml-1">Password</label>
@@ -70,14 +70,14 @@ export default function LoginPage() {
             <Input
               id="password"
               type={showPassword ? "text" : "password"}
-              label="" // Already handled by the div above
+              label=""
               placeholder="••••••••"
               {...formik.getFieldProps("password")}
               error={formik.errors.password}
               touched={formik.touched.password}
               rightElement={
-                <button 
-                  type="button" 
+                <button
+                  type="button"
                   onClick={() => setShowPassword(!showPassword)}
                   className="p-2 rounded-xl text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 transition-all focus:outline-none"
                 >

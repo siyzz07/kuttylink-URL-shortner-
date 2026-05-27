@@ -6,6 +6,5 @@ export async function GET(
   { params }: { params: Promise<{ shortCode: string }> }
 ) {
   const { shortCode } = await params;
-  console.log(shortCode,'shor');
   return urlControllerInstance.redirect(shortCode);
 }
